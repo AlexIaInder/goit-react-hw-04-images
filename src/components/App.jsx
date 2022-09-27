@@ -1,12 +1,13 @@
-import { Component } from 'react';
 import Searchbar from './Searchbar';
 import ImageGallery from './ImageGallery';
 import { fetchImages } from './services/api';
 import Button from './Button';
 import Loader from './Loader';
 import Modal from './Modal';
-export class App extends Component {
-  state = {
+import { useState } from 'react';
+
+const App = () => {
+  const [state, setState] = useState({
     search: '',
     page: 1,
     images: [],
@@ -14,13 +15,12 @@ export class App extends Component {
     largeImageURL: '',
     largeImageURLAlt: '',
     showModal: false,
-  };
+  });
 
-  onSubmit = async (q, page) => {
-    this.setState({ isLoading: true });
+  const onSubmit = async (q, page) => {
+    setState({ ...state, isLoading: true });
     const data = await fetchImages({ q, page });
-    const images =
-      page === 1 ? data.hits : [...this.state.images, ...data.hits];
+    const images = page === 1 ? data.hits : [...state.images, ...data.hits];
 
     if (page === 1) {
       window.scrollTo({
@@ -29,62 +29,52 @@ export class App extends Component {
       });
     }
 
-    this.setState({
-      ...this.state,
+    setState({
+      ...state,
       page,
       images,
       isLoading: false,
     });
   };
 
-  onloadMore = () => {
-    const { search, page } = this.state;
+  const onloadMore = () => {
+    const { search, page } = state;
     const newPage = page + 1;
 
-    this.setState({ page: newPage });
-    this.onSubmit(search, newPage);
+    setState({ ...state, page: newPage });
+    onSubmit(search, newPage);
   };
 
-  render() {
-    const {
-      images,
-      search,
-      isLoading,
-      showModal,
-      largeImageURL,
-      largeImageURLAlt,
-    } = this.state;
+  return (
+    <>
+      <Searchbar
+        onSubmit={onSubmit}
+        search={state.search}
+        setSearch={newSearch => setState({ ...state, search: newSearch })}
+      />
+      <ImageGallery
+        images={state.images}
+        setModalImage={(src, alt) =>
+          setState({
+            ...state,
+            largeImageURL: src,
+            showModal: true,
+            largeImageURLAlt: alt,
+          })
+        }
+      />
+      {state.images.length > 0 && (
+        <Button onloadMore={onloadMore} page={state.page} />
+      )}
+      {state.isLoading && <Loader />}
+      <Modal
+        show={state.showModal}
+        onClose={() => setState({ ...state, showModal: false })}
+        src={state.largeImageURL}
+        alt={state.largeImageURLAlt}
+      />
+    </>
+  );
+};
 
-    return (
-      <>
-        <Searchbar
-          onSubmit={this.onSubmit}
-          search={search}
-          setSearch={newSearch => this.setState({ search: newSearch })}
-        />
-        <ImageGallery
-          images={this.state.images}
-          setModalImage={(src, alt) =>
-            this.setState({
-              largeImageURL: src,
-              showModal: true,
-              largeImageURLAlt: alt,
-            })
-          }
-        />
-        {images.length > 0 && (
-          <Button onloadMore={this.onloadMore} page={this.state.page} />
-        )}
-        {isLoading && <Loader />}
-        {showModal && (
-          <Modal
-            show={showModal}
-            onClose={() => this.setState({ showModal: false })}
-            src={largeImageURL}
-            alt={largeImageURLAlt}
-          />
-        )}
-      </>
-    );
-  }
-}
+export default App;
