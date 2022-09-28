@@ -7,20 +7,18 @@ import Modal from './Modal';
 import { useState } from 'react';
 
 const App = () => {
-  const [state, setState] = useState({
-    search: '',
-    page: 1,
-    images: [],
-    isLoading: false,
-    largeImageURL: '',
-    largeImageURLAlt: '',
-    showModal: false,
-  });
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [images, setImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [largeImageURL, setLargeImageURL] = useState('');
+  const [largeImageURLAlt, setLargeImageURLAlt] = useState('');
+  const [showModal, setShowModal] = useState(false);
 
   const onSubmit = async (q, page) => {
-    setState({ ...state, isLoading: true });
+    setIsLoading(true);
     const data = await fetchImages({ q, page });
-    const images = page === 1 ? data.hits : [...state.images, ...data.hits];
+    const newImages = page === 1 ? data.hits : [...images, ...data.hits];
 
     if (page === 1) {
       window.scrollTo({
@@ -29,49 +27,35 @@ const App = () => {
       });
     }
 
-    setState({
-      ...state,
-      page,
-      images,
-      isLoading: false,
-    });
+    setPage(page);
+    setImages(newImages);
+    setIsLoading(false);
   };
 
   const onloadMore = () => {
-    const { search, page } = state;
     const newPage = page + 1;
 
-    setState({ ...state, page: newPage });
+    setPage(newPage);
     onSubmit(search, newPage);
+  };
+
+  const setModalImage = (src, alt) => {
+    setLargeImageURL(src);
+    setShowModal(true);
+    setLargeImageURLAlt(alt);
   };
 
   return (
     <>
-      <Searchbar
-        onSubmit={onSubmit}
-        search={state.search}
-        setSearch={newSearch => setState({ ...state, search: newSearch })}
-      />
-      <ImageGallery
-        images={state.images}
-        setModalImage={(src, alt) =>
-          setState({
-            ...state,
-            largeImageURL: src,
-            showModal: true,
-            largeImageURLAlt: alt,
-          })
-        }
-      />
-      {state.images.length > 0 && (
-        <Button onloadMore={onloadMore} page={state.page} />
-      )}
-      {state.isLoading && <Loader />}
+      <Searchbar onSubmit={onSubmit} search={search} setSearch={setSearch} />
+      <ImageGallery images={images} setModalImage={setModalImage} />
+      {images.length > 0 && <Button onloadMore={onloadMore} page={page} />}
+      {isLoading && <Loader />}
       <Modal
-        show={state.showModal}
-        onClose={() => setState({ ...state, showModal: false })}
-        src={state.largeImageURL}
-        alt={state.largeImageURLAlt}
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        src={largeImageURL}
+        alt={largeImageURLAlt}
       />
     </>
   );
